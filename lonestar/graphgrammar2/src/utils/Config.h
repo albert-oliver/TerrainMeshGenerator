@@ -1,6 +1,7 @@
 #ifndef GALOIS_CONFIG_H
 #define GALOIS_CONFIG_H
 
+
 #include <getopt.h>
 #include <cstdio>
 #include <cstdlib>
@@ -24,10 +25,9 @@ public:
 
   Config(int argc, char** argv)
       : tolerance(5), version2D(false), steps(14), cores(-1), display(false),
-        N(50.2), S(49.3), E(20.7), W(19.2), dataDir("data"), ascii(false),
-        asciiFile(""),
-        output(string("graph") + std::to_string(galois::getActiveThreads()) +
-               ".mgf") {
+        N(50.2), S(49.9), E(20.2), W(19.7), dataDir("data"), ascii(false),
+        asciiFile(""), output(string("graph") +
+        std::to_string(galois::getActiveThreads()) + ".mgf") {
     parseArguments(argc, argv);
   }
 
