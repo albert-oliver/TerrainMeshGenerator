@@ -38,7 +38,9 @@ public:
         fprintf(stderr, "DUPA 9\n");
         const Coordinates &coordinatesDEBUG = Coordinates{0, 0, 0};
         fprintf(stderr, "DUPA 8\n");
-        const Coordinates &coordinates0 = Coordinates{utm.first, utm.second, map};
+        double d = map.get_height(utm.first, utm.second);
+        fprintf(stderr, "DUPA 10\n");
+        const Coordinates &coordinates0 = Coordinates{utm.first, utm.second, d};
         galois::gInfo("Node0 coordinates prepared.");
         const Coordinates &coordinates1 = Coordinates{Utils::convertToUtm(north_border, west_border, map), map};
         const Coordinates &coordinates2 = Coordinates{Utils::convertToUtm(south_border, east_border, map), map};
