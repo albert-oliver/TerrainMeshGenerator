@@ -67,6 +67,7 @@ public:
         connManager.createNode(NodeData{false, coordinates2, false}));
     nodes.push_back(
         connManager.createNode(NodeData{false, coordinates3, false}));
+    galois::gInfo("Nodes created.");
 
     //nodes.push_back(connManager.createNode(NodeData{false,
     //Coordinates{west_border, south_border}, false}));
@@ -133,6 +134,7 @@ public:
     // creates the hyperedge for the 2 initial triangles of the graph
     connManager.createInterior(nodes[0], nodes[1], nodes[3]);
     connManager.createInterior(nodes[0], nodes[3], nodes[2]);
+    galois::gInfo("Graph generated.");
   }
 
   static void generateSampleGraphWithData(Graph& graph, Map& map,

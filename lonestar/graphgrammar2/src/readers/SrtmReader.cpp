@@ -150,7 +150,7 @@ void SrtmReader::skip_outliers(double* const* map_data, size_t length,
       }
     }
   }
-`
+
   if (outlierFound) {
     galois::gInfo("Outliers in input data detected.");
   }
