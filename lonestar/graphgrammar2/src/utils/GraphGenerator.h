@@ -35,6 +35,8 @@ public:
 
         galois::gInfo("Nodes coordinates preparation...");
         const std::pair<double, double> &utm = Utils::convertToUtm(south_border, west_border, map);
+        fprintf(stderr, "DUPA 9\n");
+        const Coordinates &coordinatesDEBUG = Coordinates{0, 0, 0};
         fprintf(stderr, "DUPA 8\n");
         const Coordinates &coordinates0 = Coordinates{utm.first, utm.second, map};
         galois::gInfo("Node0 coordinates prepared.");
