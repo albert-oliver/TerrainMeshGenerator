@@ -23,6 +23,7 @@ public:
         vector<Coordinates> verticesCoords = connManager.getVerticesCoords(node);
 
         if (!inside_condition(verticesCoords)) {
+            nodeData.setToRefine(true);//!!!!!!!!!!!!!!!!!!!!!!!!
             return false;
         }
 
