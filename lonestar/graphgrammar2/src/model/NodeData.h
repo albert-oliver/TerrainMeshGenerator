@@ -11,6 +11,7 @@ private:
     bool toRefine;
     bool hanging;
 public:
+    long tmp;
 
     NodeData(bool isHyperEdge, const Coordinates &coords, bool hanging) : hyperEdge(isHyperEdge), coords(),
                                                                           toRefine(false), hanging(hanging) {

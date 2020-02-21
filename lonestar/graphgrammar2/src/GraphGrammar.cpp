@@ -23,12 +23,15 @@
 static const char *name = "Mesh generator";
 static const char *desc = "...";
 static const char *url = "mesh_generator";
+static const int COMPUTATION = 1000000;
 
 void afterStep(int i, Graph &graph);
 
 bool basicCondition(const Graph &graph, GNode &node);
 
 void countNodes(Graph &graph);
+
+void computeHeavyComputation(GNode &node);
 
 int main(int argc, char **argv) {
     Config config = Config{argc, argv};
@@ -91,6 +94,7 @@ int main(int argc, char **argv) {
             if (!basicCondition(graph, node)) {
                 return;
             }
+            computeHeavyComputation(node);//!!!!!!!!!!!
             ConnectivityManager connManager{graph};
             ProductionState pState(connManager, node, config.version2D,
                                    [&map](double x, double y) -> double { return map->get_height(x, y); });
@@ -115,6 +119,12 @@ int main(int argc, char **argv) {
 
     delete map;
     return 0;
+}
+
+void computeHeavyComputation(GNode &node) {
+    for (int i = 0; i < COMPUTATION; ++i) {
+        ++(node->getData().tmp);
+    }
 }
 
 void countNodes(Graph &graph) {
