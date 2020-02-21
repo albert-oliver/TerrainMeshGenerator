@@ -28,6 +28,8 @@ void afterStep(int i, Graph &graph);
 
 bool basicCondition(const Graph &graph, GNode &node);
 
+void countNodes(Graph &graph);
+
 int main(int argc, char **argv) {
     Config config = Config{argc, argv};
 
@@ -63,8 +65,8 @@ int main(int argc, char **argv) {
     galois::gInfo("Initial graph generated");
 
     ConnectivityManager connManager{graph};
-//    DummyConditionChecker checker = DummyConditionChecker();
-    TerrainConditionChecker checker = TerrainConditionChecker(config.tolerance, connManager, *map);
+    DummyConditionChecker checker = DummyConditionChecker();
+//    TerrainConditionChecker checker = TerrainConditionChecker(config.tolerance, connManager, *map);
     Production1 production1{
             connManager}; //TODO: consider boost pointer containers, as they are believed to be better optimized
     Production2 production2{connManager};
@@ -103,9 +105,10 @@ int main(int argc, char **argv) {
         galois::gInfo("Step ", j, " finished.");
     }
     galois::gInfo("All steps finished.");
+    countNodes(graph);
 
-    MyGraphFormatWriter::writeToFile(graph, config.output);
-    galois::gInfo("Graph written to file ", config.output);
+//    MyGraphFormatWriter::writeToFile(graph, config.output);
+//    galois::gInfo("Graph written to file ", config.output);
     if (config.display) {
         system((std::string("./display.sh ") + config.output).c_str());
     }
@@ -114,13 +117,21 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+void countNodes(Graph &graph) {
+    long counter = 0;
+    for (auto n : graph) {
+        ++counter;
+    }
+    galois::gInfo("Nodes after execution ", counter);
+}
+
 bool basicCondition(const Graph &graph, GNode &node) {
     return graph.containsNode(node, galois::MethodFlag::WRITE) && node->getData().isHyperEdge();
 }
 
 void afterStep(int i, Graph &graph) {
-    auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
-    MyGraphFormatWriter::writeToFile(graph, path);
+//    auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
+//    MyGraphFormatWriter::writeToFile(graph, path);
 //    system((std::string("./display.sh ") + path).c_str());
 //    std::cout << std::endl;
 }
