@@ -65,8 +65,8 @@ int main(int argc, char **argv) {
     galois::gInfo("Initial graph generated");
 
     ConnectivityManager connManager{graph};
-    DummyConditionChecker checker = DummyConditionChecker();
-//    TerrainConditionChecker checker = TerrainConditionChecker(config.tolerance, connManager, *map);
+//    DummyConditionChecker checker = DummyConditionChecker();
+    TerrainConditionChecker checker = TerrainConditionChecker(config.tolerance, connManager, *map);
     Production1 production1{
             connManager}; //TODO: consider boost pointer containers, as they are believed to be better optimized
     Production2 production2{connManager};
@@ -79,14 +79,14 @@ int main(int argc, char **argv) {
     galois::gInfo("Loop is being started...");
 //    afterStep(0, graph);
     for (int j = 0; j < config.steps; j++) {
+        galois::StatTimer step(("step " + std::to_string(j)).c_str());
+        step.start();
         galois::for_each(galois::iterate(graph.begin(), graph.end()), [&](GNode node, auto &ctx) {
             if (basicCondition(graph, node)) {
                 checker.execute(node);
             }
         });
         galois::gInfo("Condition chceking in step ", j, " finished.");
-        galois::StatTimer step(("step" + std::to_string(j)).c_str());
-        step.start();
         galois::for_each(galois::iterate(graph.begin(), graph.end()), [&](GNode node, auto &ctx) {
             if (!basicCondition(graph, node)) {
                 return;
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
         galois::gInfo("Step ", j, " finished.");
     }
     galois::gInfo("All steps finished.");
-    countNodes(graph);
+//    countNodes(graph);
 
 //    MyGraphFormatWriter::writeToFile(graph, config.output);
 //    galois::gInfo("Graph written to file ", config.output);
