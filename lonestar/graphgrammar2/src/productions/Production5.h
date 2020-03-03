@@ -29,7 +29,9 @@ public:
 //        logg(pState.getInteriorData(), pState.getVerticesData());
         const vector<int> &brokenEdges = pState.getBrokenEdges();
         if (std::find(brokenEdges.begin(), brokenEdges.end(), longestEdges[0]) == brokenEdges.end()) {
-            breakElementWithoutHangingNode(longestEdges[0], pState, ctx);
+            const std::pair<GNode, GNode> &pair = breakElementWithoutHangingNode(longestEdges[0], pState, ctx);
+            ctx.push(pair.first);
+            ctx.push(pair.second);
 //            std::cout << "P5 executed ";
             return true;
         }

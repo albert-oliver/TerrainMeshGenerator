@@ -4,6 +4,7 @@
 
 #include <galois/optional.h>
 #include "../model/Graph.h"
+#include "MyGraphFormatWriter.h"
 
 class ConnectivityManager {
 public:
@@ -17,7 +18,11 @@ public:
         return vertices;
     }
 
-    std::vector<optional<EdgeIterator>> getTriangleEdges(std::vector<GNode> vertices) {
+    std::vector<optional<EdgeIterator>> getTriangleEdges(const GNode &vertex) const {
+        return getTriangleEdges(getNeighbours(vertex));
+    }
+
+    std::vector<optional<EdgeIterator>> getTriangleEdges(std::vector<GNode> vertices) const {
         std::vector<optional<EdgeIterator>> edges;
         for (int i = 0; i < 3; i++) {
             edges.emplace_back(getEdge(vertices[i], vertices[(i + 1) % 3]));
@@ -70,7 +75,6 @@ public:
 
     GNode createNode(NodeData &nodeData, galois::UserContext<GNode> &ctx) const {
         GNode node = createNode(nodeData);
-        ctx.push(node);
         return std::move(node);
     }
 
@@ -88,7 +92,7 @@ public:
         graph.getEdgeData(edge).setLength(length);
     }
 
-    void createInterior(const GNode &node1, const GNode &node2, const GNode &node3,
+    GNode createInterior(const GNode &node1, const GNode &node2, const GNode &node3,
                         galois::UserContext<GNode> &ctx) const {
         NodeData interiorData = NodeData{true, false};
         auto interior = createNode(interiorData, ctx);
@@ -98,6 +102,7 @@ public:
         graph.addEdge(interior, node3);
         interior->getData().setCoords(
                 (node1->getData().getCoords() + node2->getData().getCoords() + node3->getData().getCoords()) / 3.);
+        return interior;
     }
 
     GNode createInterior(const GNode &node1, const GNode &node2, const GNode &node3) const {
@@ -135,6 +140,8 @@ public:
             graph.removeEdge(node2, edge2);
             return;
         }
+        //MyGraphFormatWriter::writeToFile(graph, std::string("out/error.mgf"));
+        //system((std::string("./display.sh ") + "out/error.mgf").c_str());
         std::cerr << "Problem in removing an edge." << std::endl;
     }
 

@@ -50,10 +50,10 @@ protected:
         hangingNode->getData().setHanging(false);
     }
 
-    void breakElementWithoutHangingNode(int edgeToBreak, ProductionState &pState,
-                                        galois::UserContext<GNode> &ctx) const {
+    std::pair<GNode, GNode> breakElementWithoutHangingNode(int edgeToBreak, ProductionState &pState,
+                                                                 galois::UserContext<GNode> &ctx) const {
         GNode newNode = createNodeOnEdge(edgeToBreak, pState, ctx);
-        breakElementUsingNode(edgeToBreak, newNode, pState, ctx);
+        return breakElementUsingNode(edgeToBreak, newNode, pState, ctx);
     }
 
 
@@ -87,7 +87,6 @@ private:
         NodeData newNodeData = NodeData{false, newPointCoords, !breakingOnBorder};
         GNode newNode = graph.createNode(newNodeData);
         graph.addNode(newNode);
-        ctx.push(newNode);
         for (int i = 0; i < 3; ++i) {
             auto vertexData = pState.getVerticesData()[i];
             auto edge = graph.addEdge(newNode, pState.getVertices()[i]);
@@ -99,11 +98,44 @@ private:
             graph.getEdgeData(edge).setLength(
                     newNodeData.getCoords().dist(vertexData.getCoords(), pState.isVersion2D()));
         }
+
+        auto args = getNeighbourHEdge(edgeToBreak, pState);
+        if (args) {
+            ctx.push(args.get());
+        } else {
+            std::cout << "not neighbour!" << std::endl;
+        }
+
         return newNode;
     }
 
-    void breakElementUsingNode(int edgeToBreak, GNode const &hangingNode, const ProductionState &pState,
-                               galois::UserContext<GNode> &ctx) const {
+    optional<GNode> getNeighbourHEdge(int edgeToBreak, const ProductionState &pState) const {
+        if (!(pState.getEdgesData()[edgeToBreak]->isBorder())) {
+            std::vector<GNode> neighbours1 = connManager.getNeighbours(
+                    pState.getVertices()[getEdgeVertices(edgeToBreak).first]);
+            std::vector<GNode> neighbours2 = connManager.getNeighbours(
+                    pState.getVertices()[getEdgeVertices(edgeToBreak).second]);
+
+            std::sort(neighbours1.begin(), neighbours1.end());
+            std::sort(neighbours2.begin(), neighbours2.end());
+
+            std::vector<GNode> v_intersection;
+            std::set_intersection(neighbours1.begin(), neighbours1.end(), neighbours2.begin(), neighbours2.end(),
+                                  std::inserter(v_intersection, v_intersection.begin()));
+
+            for (auto intersect : v_intersection) {
+                if (intersect->getData().isHyperEdge()) {
+                    return optional<GNode>(intersect);
+                }
+            }
+            std::cerr << "ERROR\n";
+            abort();
+        }
+        return optional<GNode>();
+    }
+
+    std::pair<GNode, GNode> breakElementUsingNode(int edgeToBreak, GNode const &hangingNode,
+            const ProductionState &pState, galois::UserContext<GNode> &ctx) const {
         const std::pair<int, int> &brokenEdgeVertices = getEdgeVertices(edgeToBreak);
         Graph &graph = connManager.getGraph();
         int neutralVertex = getNeutralVertex(edgeToBreak);
@@ -114,12 +146,13 @@ private:
                 length,
                 (hNodeData.getCoords() + pState.getVerticesData()[neutralVertex].getCoords()) / 2);
 
-        connManager.createInterior(hangingNode, pState.getVertices()[neutralVertex],
-                                   pState.getVertices()[brokenEdgeVertices.first], ctx);
-        connManager.createInterior(hangingNode, pState.getVertices()[neutralVertex],
-                                   pState.getVertices()[brokenEdgeVertices.second], ctx);
-
+        auto result = std::pair<GNode, GNode>(
+                connManager.createInterior(hangingNode, pState.getVertices()[neutralVertex],
+                                           pState.getVertices()[brokenEdgeVertices.first], ctx),
+                connManager.createInterior(hangingNode, pState.getVertices()[neutralVertex],
+                                           pState.getVertices()[brokenEdgeVertices.second], ctx));
         graph.removeNode(pState.getInterior());
+        return result;
     }
 
     GNode getHangingNode(int edgeToBreak, const ProductionState &pState) const {

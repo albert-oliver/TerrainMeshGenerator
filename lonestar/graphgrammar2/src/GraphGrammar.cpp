@@ -77,24 +77,29 @@ int main(int argc, char **argv) {
     Production4 production4{connManager};
     Production5 production5{connManager};
     Production6 production6{connManager};
-    vector<Production *> productions = {&production1, &production2, &production3, &production4, &production5,
+    vector<Production *> productions = {/*&production1,*/ &production2, &production3, &production4, &production5,
                                         &production6};
     galois::gInfo("Loop is being started...");
 //    afterStep(0, graph);
+
+
+    typedef galois::worklists::Deterministic<> DWL;
+    const galois::s_wl<galois::worklists::Deterministic<>> &wl = galois::wl<DWL>();
+
     for (int j = 0; j < config.steps; j++) {
         galois::StatTimer step(("step " + std::to_string(j)).c_str());
         step.start();
-        galois::for_each(galois::iterate(graph.begin(), graph.end()), [&](GNode node, auto &ctx) {
-            if (basicCondition(graph, node)) {
-                checker.execute(node);
-            }
-        });
-        galois::gInfo("Condition chceking in step ", j, " finished.");
+//        galois::for_each(galois::iterate(graph.begin(), graph.end()), [&](GNode node, auto &ctx) {
+//            if (basicCondition(graph, node)) {
+//                checker.execute(node);
+//            }
+//        });
+//        galois::gInfo("Condition chceking in step ", j, " finished.");
+
         galois::for_each(galois::iterate(graph.begin(), graph.end()), [&](GNode node, auto &ctx) {
             if (!basicCondition(graph, node)) {
                 return;
             }
-            computeHeavyComputation(node);//!!!!!!!!!!!
             ConnectivityManager connManager{graph};
             ProductionState pState(connManager, node, config.version2D,
                                    [&map](double x, double y) -> double { return map->get_height(x, y); });
@@ -104,15 +109,19 @@ int main(int argc, char **argv) {
                     return;
                 }
             }
-        }, galois::loopname(("step" + std::to_string(j)).c_str()));
+            if (checker.execute(node) && production1.execute(pState, ctx)) {
+                afterStep(j, graph);
+                return;
+            }
+        }, galois::loopname(("step" + std::to_string(j)).c_str()), galois::worklists::PerThreadChunkQueue());
         step.stop();
         galois::gInfo("Step ", j, " finished.");
     }
     galois::gInfo("All steps finished.");
 //    countNodes(graph);
 
-//    MyGraphFormatWriter::writeToFile(graph, config.output);
-//    galois::gInfo("Graph written to file ", config.output);
+    MyGraphFormatWriter::writeToFile(graph, config.output);
+    galois::gInfo("Graph written to file ", config.output);
     if (config.display) {
         system((std::string("./display.sh ") + config.output).c_str());
     }
@@ -140,8 +149,8 @@ bool basicCondition(const Graph &graph, GNode &node) {
 }
 
 void afterStep(int i, Graph &graph) {
-//    auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
-//    MyGraphFormatWriter::writeToFile(graph, path);
-//    system((std::string("./display.sh ") + path).c_str());
+    auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
+    MyGraphFormatWriter::writeToFile(graph, path);
+    system((std::string("./display.sh ") + path).c_str());
 //    std::cout << std::endl;
 }

@@ -33,23 +33,42 @@ public:
 
         const vector<int> &longestEdges = pState.getLongestEdges();
 
+        int le = -1;
+        bool found = false;
         for (int longest : longestEdges) {
             if (pState.getEdgesData()[longest].get().isBorder()) {
-                breakElementWithoutHangingNode(longest, pState, ctx);
-//                std::cout << "P3 executed ";
-                return true;
+                le = longest;
+                found = true;
+                break;
             }
         }
-        for (int longest : longestEdges) {
-            if (!pState.getVerticesData()[getEdgeVertices(longest).first].isHanging() &&
-                !pState.getVerticesData()[getEdgeVertices(longest).second].isHanging()) {
+        if (!found) {
+            for (int longest : longestEdges) {
+                if (!pState.getVerticesData()[getEdgeVertices(longest).first].isHanging() &&
+                    !pState.getVerticesData()[getEdgeVertices(longest).second].isHanging()) {
+                    le = longest;
+                    break;
+                }
+            }
+        }
 
-                breakElementWithoutHangingNode(longest, pState, ctx);
-//                std::cout << "P3 executed ";
+        const std::pair<GNode, GNode> &pair = breakElementWithoutHangingNode(le, pState, ctx);
+
+        for (auto edge : connManager.getTriangleEdges(pair.first)) {
+            if (edge.get() == pState.getEdgesIterators()[brokenEdge].get()) {
+                ctx.push(pair.first);
                 return true;
             }
         }
-        return false;
+        for (auto edge : connManager.getTriangleEdges(pair.second)) {
+            if (edge.get() == pState.getEdgesIterators()[brokenEdge].get()) {
+                ctx.push(pair.second);
+                return true;
+            }
+        }
+
+//                std::cout << "P3 executed ";
+
     }
 
 };
