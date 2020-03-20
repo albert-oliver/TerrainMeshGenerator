@@ -158,8 +158,8 @@ bool basicCondition(const Graph& graph, GNode& node) {
 
 //! Writes intermediate data to file
 void afterStep(int i, Graph& graph) {
-  auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
-  MyGraphFormatWriter::writeToFile(graph, path);
+//  auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
+//  MyGraphFormatWriter::writeToFile(graph, path);
   //    system((std::string("./display.sh ") + path).c_str());
   //    std::cout << std::endl;
 }
