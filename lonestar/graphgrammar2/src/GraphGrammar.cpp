@@ -15,8 +15,9 @@
 #include "utils/MyGraphFormatWriter.h"
 #include "utils/utils.h"
 #include "utils/GraphGenerator.h"
-#include "readers/SrtmReader.h"
 #include "readers/AsciiReader.h"
+#include "readers/InpReader.h"
+#include "readers/SrtmReader.h"
 #include "utils/Config.h"
 
 static const char* name = "Mesh generator";
@@ -66,9 +67,15 @@ int main(int argc, char** argv) {
   //    map->getLength() - 1, map->getWidth() - 1, 0, config.version2D);
 
   // creates the initial mesh using the borders and the new map
-  GraphGenerator::generateSampleGraphWithDataWithConversionToUtm(
+  if (config.inputMeshFile.size() == 0) {
+    GraphGenerator::generateSampleGraphWithDataWithConversionToUtm(
       graph, *map, config.W, config.N, config.E, config.S, config.version2D);
   galois::gInfo("Initial graph generated");
+  } else {
+    map->setZone(config.zone);
+    map->setHemisphere(config.hemisphere);
+    inpRead(config.dataDir+"/"+config.inputMeshFile, graph, *map, config.version2D);
+  }
 
 
   // initialize wrapper over graph object (ConnManager)

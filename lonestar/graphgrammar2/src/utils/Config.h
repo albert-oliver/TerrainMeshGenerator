@@ -2,10 +2,12 @@
 #define GALOIS_CONFIG_H
 
 
-#include <getopt.h>
+#include <cctype>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
-#include <cctype>
+#include <getopt.h>
+#include <string>
 
 class Config {
 public:
@@ -18,15 +20,19 @@ public:
   double S;
   double E;
   double W;
-  string dataDir;
+  std::string dataDir;
   bool ascii;
-  string asciiFile;
-  string output;
+  std::string asciiFile;
+  std::string inputMeshFile; // Filename of the inp mesh. It should be inside dataDir and use UTM coordinates
+  long zone;                 // UTM zone of the inputMeshFile
+  char hemisphere;           // Hemisphere of the inputMeshFile
+  std::string output;
 
   Config(int argc, char** argv)
-      : tolerance(5), version2D(false), steps(14), cores(-1), display(false),
-        N(50.2), S(49.9), E(20.2), W(19.7), dataDir("data"), ascii(false),
-        asciiFile(""), output(string("graph") +
+      : tolerance(5), version2D(false), steps(13), cores(-1), display(false),
+        N(50.3), S(49.2), E(20.7), W(19.1), dataDir("data"), ascii(false),
+        asciiFile(""), inputMeshFile(""), zone(34), hemisphere('N'), 
+	output(std::string("graph") +
         std::to_string(galois::getActiveThreads()) + ".mgf") {
     parseArguments(argc, argv);
   }
