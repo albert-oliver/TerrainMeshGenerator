@@ -12,11 +12,19 @@ Map* SrtmReader::read(
     const char* map_dir) { // data[row][column] - it's array of rows
   Utils::swap_if_required((double*)&south_border, (double*)&north_border);
   Utils::swap_if_required((double*)&west_border, (double*)&east_border);
+
   // Rounding to avoid problems with numerical errors
-  int west_border_int  = border_to_int(west_border);
-  int north_border_int = border_to_int(north_border);
-  int east_border_int  = border_to_int(east_border);
-  int south_border_int = border_to_int(south_border);
+  // Adding some margin to make sure that the mesh is always inside the map
+  int west_border_int  = border_to_int(west_border) - MARGIN;
+  int north_border_int = border_to_int(north_border) + MARGIN;
+  int east_border_int  = border_to_int(east_border) + MARGIN;
+  int south_border_int = border_to_int(south_border) - MARGIN;
+
+  // Update the map vertices
+  const auto map_N_border = (double)north_border_int / VALUES_IN_DEGREE;
+  const auto map_S_border = (double)south_border_int / VALUES_IN_DEGREE;
+  const auto map_E_border = (double)east_border_int / VALUES_IN_DEGREE;
+  const auto map_W_border = (double)west_border_int / VALUES_IN_DEGREE;
 
   size_t cols       = (size_t)(east_border_int - west_border_int);
   size_t rows       = (size_t)(north_border_int - south_border_int);
@@ -25,11 +33,13 @@ Map* SrtmReader::read(
   double** map_data = Map::init_map_data(rows, cols);
   Map* map          = new Map(map_data, cols, rows, 1. / VALUES_IN_DEGREE,
                      1. / VALUES_IN_DEGREE);
-  map->setNorthBorder(north_border);
-  map->setWestBorder(west_border);
+
+
+  map->setNorthBorder(map_N_border);
+  map->setWestBorder(map_W_border);
 
   // read in points within specified borders
-  read_from_multiple_files(west_border, north_border, east_border, south_border,
+  read_from_multiple_files(map_W_border, map_N_border, map_E_border, map_S_border,
                            map_dir, map_data);
 
   skip_outliers(map_data, map->getLength(), map->getWidth());
