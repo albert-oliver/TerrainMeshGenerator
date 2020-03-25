@@ -42,19 +42,18 @@ void inpRead(const std::string& filename, Graph& graph, Map& map,
   auto nodes = std::vector<GNode>(numberOfNodes);
 
   // Read all coordinates and generating the nodes
-  for (auto i = 0; i < numberOfNodes; ++i) {
+  for (auto i = 0u; i < numberOfNodes; ++i) {
     file >> dummy;
     double x, y, z;
     file >> x;
     file >> y;
     file >> z;
-    const auto& coordinates = Coordinates{Utils::convertToUtm(x, y, map), map};
+    const auto& coordinates = Coordinates{x, y, map};
 
     // XXX[AOS]: I don't know what the first and second false mean...
     //           I assume one is hanging-node, but the other, no idea...
     //           Maybe we need to change them.
-    nodes.push_back(
-        connManager.createNode(NodeData{false, coordinates, false}));
+    nodes[i] = connManager.createNode(NodeData{false, coordinates, false});
   }
 
   // Containers for edges
@@ -65,7 +64,7 @@ void inpRead(const std::string& filename, Graph& graph, Map& map,
   auto isEdgeBoundary = std::map<inpEdge, bool>{};
 
   // Read elements, create interiors, and populate edgeSet and isEdgeBoundary
-  for (auto i = 0; i < numberOfElements; ++i) {
+  for (auto i = 0u; i < numberOfElements; ++i) {
     file >> dummy;
     file >> dummy;
     std::string dummy_str;
