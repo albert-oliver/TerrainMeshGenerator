@@ -29,7 +29,7 @@ private:
 
   char hemisphere;
 
-  double get_height_wo_interpol(double lon, double lat, int corner);
+  double get_height_wo_interpol(const double lon, const double lat, const int corner);
 
 public:
   Map(double** data, size_t width, size_t length, double cellWidth,
