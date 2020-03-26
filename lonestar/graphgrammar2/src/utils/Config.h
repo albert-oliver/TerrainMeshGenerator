@@ -24,7 +24,7 @@ public:
   string output;
 
   Config(int argc, char** argv)
-      : tolerance(5), version2D(false), steps(14), cores(-1), display(false),
+      : tolerance(5), version2D(false), steps(22), cores(-1), display(false),
         N(50.2), S(49.9), E(20.2), W(19.7), dataDir("data"), ascii(false),
         asciiFile(""), output(string("graph") +
         std::to_string(galois::getActiveThreads()) + ".mgf") {

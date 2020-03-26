@@ -18,6 +18,7 @@
 #include "readers/SrtmReader.h"
 #include "readers/AsciiReader.h"
 #include "utils/Config.h"
+#include "writers/InpWriter.h"
 
 static const char* name = "Mesh generator";
 static const char* desc = "...";
@@ -138,8 +139,12 @@ int main(int argc, char** argv) {
   galois::gInfo("All steps finished.");
 
   // final result writing
-  MyGraphFormatWriter::writeToFile(graph, config.output);
-  galois::gInfo("Graph written to file ", config.output);
+  // MyGraphFormatWriter::writeToFile(graph, config.output);
+  // galois::gInfo("Graph written to file ", config.output);
+
+
+  inpWriter("output_test.inp", graph);
+
   if (config.display) {
     system((std::string("./display.sh ") + config.output).c_str());
   }
