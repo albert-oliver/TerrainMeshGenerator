@@ -2,15 +2,15 @@
 
 #include "../model/Coordinates.h"
 #include "../model/Graph.h"
-#include "../model/Map.h"
 #include "../model/NodeData.h"
+#include "../utils/Config.h"
 #include "../utils/ConnectivityManager.h"
-#include "../utils/Utils.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -19,18 +19,24 @@
 
 using inpEdge = std::pair<size_t, size_t>;
 
-void inpRead(const std::string& filename, Graph& graph, Map& map,
-             bool version2D) {
+void inpRead(const std::string& filename, Graph& graph, Config& config) {
+
   auto connManager = ConnectivityManager{graph};
+
+  // First, assign corners to max and min values
+  config.E = std::numeric_limits<double>::lowest();
+  config.N = std::numeric_limits<double>::lowest();
+  config.S = std::numeric_limits<double>::max();
+  config.W = std::numeric_limits<double>::max();
+
   std::ifstream file(filename, std::ios_base::in);
 
   if (!file.is_open()) {
-    // XXX[AOS]: Maybe you prefer to raise an exception or if there's some
-    //          function to abort
     std::cerr << "File " << filename << " cannot be opened!" << std::endl;
     exit(EXIT_FAILURE);
   }
 
+  // Read the header (Number of nodes and number of elements)
   size_t numberOfNodes, numberOfElements, dummy;
 
   file >> numberOfNodes;
@@ -39,6 +45,7 @@ void inpRead(const std::string& filename, Graph& graph, Map& map,
   file >> dummy;
   file >> dummy;
 
+  // Vector to store the nodes in order to create the interiors
   auto nodes = std::vector<GNode>(numberOfNodes);
 
   // Read all coordinates and generating the nodes
@@ -48,12 +55,15 @@ void inpRead(const std::string& filename, Graph& graph, Map& map,
     file >> x;
     file >> y;
     file >> z;
-    const auto& coordinates = Coordinates{x, y, map};
+    const auto& coordinates = Coordinates{x, y, z};
 
-    // XXX[AOS]: I don't know what the first and second false mean...
-    //           I assume one is hanging-node, but the other, no idea...
-    //           Maybe we need to change them.
     nodes[i] = connManager.createNode(NodeData{false, coordinates, false});
+
+    // Update the four corners
+    config.N = std::max(y, config.N);
+    config.S = std::min(y, config.S);
+    config.E = std::max(x, config.E);
+    config.W = std::min(x, config.W);
   }
 
   // Containers for edges
@@ -102,11 +112,8 @@ void inpRead(const std::string& filename, Graph& graph, Map& map,
     const auto node2Coords = node2->getData().getCoords();
 
     auto midPointCoords = (node1Coords + node2Coords) / 2.;
-    // Change z coordinate to the map height
-    midPointCoords.setZ(
-        map.get_height(midPointCoords.getX(), midPointCoords.getY()));
 
-    const auto length = node1Coords.dist(node2Coords, version2D);
+    const auto length = node1Coords.dist(node2Coords, config.version2D);
 
     connManager.createEdge(node1, node2, isEdgeBoundary.at(edge),
                            midPointCoords, length);
