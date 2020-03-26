@@ -1,15 +1,18 @@
 #ifndef GALOIS_UTILS_H
 #define GALOIS_UTILS_H
 
+#include <cmath>
+#include <vector>
+
 static const double EPS = 1e-4;
 
-bool equals(double a, double b) { return fabs(a - b) < EPS; }
+inline bool equals(double a, double b) { return fabs(a - b) < EPS; }
 
-bool greater(double a, double b) { return a - b >= EPS; }
+inline bool greater(double a, double b) { return a - b >= EPS; }
 
-bool less(double a, double b) { return a - b <= -EPS; }
+inline bool less(double a, double b) { return a - b <= -EPS; }
 
-std::vector<int> indexesOfMaxElems(std::vector<double> elems) {
+inline std::vector<int> indexesOfMaxElems(std::vector<double> elems) {
   std::vector<int> result;
   if (elems.empty()) {
     return result;
