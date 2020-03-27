@@ -36,7 +36,6 @@ int main(int argc, char** argv) {
     galois::setActiveThreads(config.cores);
   }
 
-
   LonestarStart(argc, argv, name, desc, url);
   Graph graph{};
 
@@ -70,7 +69,6 @@ int main(int argc, char** argv) {
       graph, *map, config.W, config.N, config.E, config.S, config.version2D);
   galois::gInfo("Initial graph generated");
 
-
   // initialize wrapper over graph object (ConnManager)
   ConnectivityManager connManager{graph};
   //    DummyConditionChecker checker = DummyConditionChecker();
@@ -102,36 +100,42 @@ int main(int argc, char** argv) {
     galois::StatTimer step(("step" + std::to_string(j)).c_str());
     step.start();
 
-    galois::for_each(galois::iterate(graph.begin(), graph.end()),
-                     [&](GNode node, auto& ctx) {
-                       // only need to check hyperedges
-                       if (!basicCondition(graph, node)) {
-                         return;
-                       }
+    auto prodExecuted = true;
 
-                       // TODO pretty sure this can be commented out since
-                       // it will capture connManager outside by reference
-                       ConnectivityManager connManager{graph};
+    while (prodExecuted) {
+      prodExecuted = false;
 
-                       // TODO does this have to be initialized for every one?
-                       // may be able to optimize
-                       ProductionState pState(
-                           connManager, node, config.version2D,
-                           [&map](double x, double y) -> double {
-                             return map->get_height(x, y);
-                           });
+      galois::for_each(
+          galois::iterate(graph.begin(), graph.end()),
+          [&](GNode node, auto& ctx) {
+            // only need to check hyperedges
+            if (!basicCondition(graph, node)) {
+              return;
+            }
 
+            // TODO pretty sure this can be commented out since
+            // it will capture connManager outside by reference
+            ConnectivityManager connManager{graph};
 
-                       // loop through productions and apply the first applicable
-                       // one
-                       for (Production* production : productions) {
-                         if (production->execute(pState, ctx)) {
-                           afterStep(j, graph);
-                           return;
-                         }
-                       }
-                     },
-                     galois::loopname(("step" + std::to_string(j)).c_str()));
+            // TODO does this have to be initialized for every one?
+            // may be able to optimize
+            ProductionState pState(connManager, node, config.version2D,
+                                   [&map](double x, double y) -> double {
+                                     return map->get_height(x, y);
+                                   });
+
+            // loop through productions and apply the first applicable
+            // one
+            for (Production* production : productions) {
+              if (production->execute(pState, ctx)) {
+                afterStep(j, graph);
+                prodExecuted = true;
+                return;
+              }
+            }
+          },
+          galois::loopname(("step" + std::to_string(j)).c_str()));
+    }
     step.stop();
     galois::gInfo("Step ", j, " finished.");
   }
@@ -148,18 +152,16 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-
 //! Checks if node exists + is hyperedge
 bool basicCondition(const Graph& graph, GNode& node) {
   return graph.containsNode(node, galois::MethodFlag::WRITE) &&
          node->getData().isHyperEdge();
 }
 
-
 //! Writes intermediate data to file
 void afterStep(int i, Graph& graph) {
-//  auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
-//  MyGraphFormatWriter::writeToFile(graph, path);
+  //  auto path = std::string("out/step") + std::to_string((i - 1)) + ".mgf";
+  //  MyGraphFormatWriter::writeToFile(graph, path);
   //    system((std::string("./display.sh ") + path).c_str());
   //    std::cout << std::endl;
 }
