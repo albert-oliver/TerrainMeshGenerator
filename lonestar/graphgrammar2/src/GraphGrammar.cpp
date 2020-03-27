@@ -114,12 +114,11 @@ int main(int argc, char** argv) {
     map->setZone(config.zone);
     map->setHemisphere(config.hemisphere);
 
+    // Update the coordinates of all graph nodes (mesh nodes, and the interior nodes)
     for (auto node : graph) {
-        if (!node->getData().isHyperEdge()) {
             const auto coords = node->getData().getCoords();
 
             node->getData().setCoords(Coordinates{coords.getX(), coords.getY(), *map});
-        }
     }
 
   }
