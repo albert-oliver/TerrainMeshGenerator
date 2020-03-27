@@ -125,21 +125,26 @@ void processGraph(Graph& graph, std::vector<InpNodeInfo>& nodeVector,
         InpConecInfo{std::vector<size_t>{id, intNodesID.at(2)}, 4, "line"});
 
     // Finally, we generate the triangle edges
-    //
-    // FIXME [AOS]: Right now we are not checking the boundary, so all edges
-    // have material 5
-    //
-    // Generate the edges and check if the edge has already been inserted
-    // XXX [AOS]: Probably we need to change this and loop over the graph edges
-    // directly.
     for (auto i = 0u; i < intNodesID.size(); ++i) {
+
+      // Create the inp edge
       const auto edge =
           inpEdge{std::min(intNodesID[i], intNodesID[(i + 1) % 3]),
                   std::max(intNodesID[i], intNodesID[(i + 1) % 3])};
 
-      if (edgeSet.insert(edge).second) { // It has not been created before
+      // Check if it has been created before
+      if (edgeSet.insert(edge).second) {
+
+        // Get the graph edge to see if it's on the boundary
+        const auto graphEdge =
+            connManager.getEdge(intNodes[i], intNodes[(i + 1) % 3]);
+
+        const auto mat =
+            connManager.getGraph().getEdgeData(graphEdge.get()).isBorder() ? 6u
+                                                                           : 5u;
+
         conecVector.push_back(InpConecInfo{
-            std::vector<size_t>{edge.first, edge.second}, 5, "line"});
+            std::vector<size_t>{edge.first, edge.second}, mat, "line"});
       }
     }
   }
