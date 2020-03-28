@@ -56,7 +56,7 @@ public:
   }
 
   //! Get 2D or 3D distances given another set of coordinates
-  double dist(const Coordinates& rhs, bool version2D) {
+  double dist(const Coordinates& rhs, bool version2D) const {
     if (version2D) {
       return dist2D(rhs);
     } else {

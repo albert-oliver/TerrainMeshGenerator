@@ -1,9 +1,12 @@
-#include <cstdio>
-#include <values.h>
-#include <cmath>
 #include "Map.h"
+
 #include "../utils/Utils.h"
 #include "../libmgrs/utm.h"
+
+#include <cstdio>
+#include <cmath>
+#include <iostream>
+#include <values.h>
 
 double** Map::init_map_data(size_t rows, size_t cols) {
   double** map;
@@ -28,7 +31,9 @@ double Map::get_height(double lon, double lat) {
 }
 
 double Map::get_height(double lon, double lat, bool convert) {
+
   double x, y;
+
   // convert to geodetic if required
   if (convert) {
     if (Convert_UTM_To_Geodetic(zone, hemisphere, lon, lat, &y, &x)) {
@@ -41,66 +46,70 @@ double Map::get_height(double lon, double lat, bool convert) {
     x = lon;
     y = lat;
   }
-  // using bilinear interpolation
-  double top_left     = get_height_wo_interpol(x, y, 1);
-  double top_right    = get_height_wo_interpol(x, y, 2);
-  double bottom_right = get_height_wo_interpol(x, y, 3);
-  double bottom_left  = get_height_wo_interpol(x, y, 4);
 
-  double x_fract = (x - west_border) / cell_width -
-                   Utils::floor2((x - west_border) / cell_width);
-  double y_fract = fabs(y - north_border) / cell_length -
-                   Utils::floor2(fabs(y - north_border) / cell_length);
+  // Check if the point is inside the map:
+  const auto south_border = north_border - cell_length * length;
+  const auto east_border = west_border + cell_width * width;
 
+  if (Utils::is_greater(y, north_border) ||
+      Utils::is_lesser(y, south_border)  ||
+      Utils::is_greater(x, east_border)  ||
+      Utils::is_lesser(x, west_border))  {
+	  std::cerr << "Point is outside the map" << std::endl;
+	  exit(EXIT_FAILURE);
+  }
+
+  // Compute "grid coordinates".
+  // modf returns the fractional part of the number,
+  // and assigns the integral part to the second argument.
+  //
+  // The integral part let us know in which "cell" of the map the point is located,
+  // and the fractional part let us interpolate the heights.
+  double x_grid_int_part, y_grid_int_part;
+  const auto y_fract = std::modf((north_border - y) / cell_length, &y_grid_int_part );
+  const auto x_fract = std::modf((x - west_border) / cell_width,  &x_grid_int_part);
+
+  // using Lagrange bilinear interpolation
+  // Compute the height of the four corners
+  double top_left_height     = get_height_wo_interpol(x_grid_int_part, y_grid_int_part, 1);
+  double top_right_height    = get_height_wo_interpol(x_grid_int_part, y_grid_int_part, 2);
+  double bottom_right_height = get_height_wo_interpol(x_grid_int_part, y_grid_int_part, 3);
+  double bottom_left_height  = get_height_wo_interpol(x_grid_int_part, y_grid_int_part, 4);
+
+  // Sum the contributions of each corner
   double height = 0.;
-  height += top_left * (1 - x_fract) * (1 - y_fract);
-  height += top_right * x_fract * (1 - y_fract);
-  height += bottom_right * x_fract * y_fract;
-  height += bottom_left * (1 - x_fract) * y_fract;
+  height += top_left_height * (1 - x_fract) * (1 - y_fract);
+  height += top_right_height * x_fract * (1 - y_fract);
+  height += bottom_right_height * x_fract * y_fract;
+  height += bottom_left_height * (1 - x_fract) * y_fract;
 
   return height;
 }
 
 // corner: 1 - top_left, 2 - top_right, 3 - bottom_right, 4 - bottom_left
-double Map::get_height_wo_interpol(double lon, double lat, int corner) {
-  double (*fun1)(double);
-  double (*fun2)(double);
+double Map::get_height_wo_interpol(const double lon_grid, const double lat_grid, const int corner) {
+
+  auto x = (int)lon_grid; 
+  auto y = (int)lat_grid; 
+
   switch (corner) {
   case 1:
-    fun1 = Utils::floor2;
-    fun2 = Utils::floor2;
     break;
   case 2:
-    fun1 = Utils::floor2;
-    fun2 = Utils::ceil2;
+    ++x;
     break;
   case 3:
-    fun1 = Utils::ceil2;
-    fun2 = Utils::ceil2;
+    ++x;
+    ++y;
     break;
   case 4:
-    fun1 = Utils::ceil2;
-    fun2 = Utils::floor2;
+    ++y;
     break;
   default:
+    //XXX[AOS]: I think we should raise an error, unless it is used elsewhere.
     return MINDOUBLE;
   }
 
-  int y, x;
-  if (fun1((north_border - lat) / cell_length) > length - 1) {
-    y = (int)(length - 1);
-  } else if (fun1((north_border - lat) / cell_length) < 0) {
-    y = 0;
-  } else {
-    y = (int)fun1((north_border - lat) / cell_length);
-  }
-  if (fun2((lon - west_border) / cell_width) > width - 1) {
-    x = (int)(width - 1);
-  } else if (fun2((lon - west_border) / cell_width) < 0) {
-    x = 0;
-  } else {
-    x = (int)fun2((lon - west_border) / cell_width);
-  }
   return data[y][x];
 }
 
