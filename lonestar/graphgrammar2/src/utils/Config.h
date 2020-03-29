@@ -1,11 +1,14 @@
 #ifndef GALOIS_CONFIG_H
 #define GALOIS_CONFIG_H
 
+#include <galois/graphs/Graph.h>
 
-#include <getopt.h>
+#include <cctype>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
-#include <cctype>
+#include <getopt.h>
+#include <string>
 
 class Config {
 public:
@@ -14,20 +17,31 @@ public:
   int steps;
   int cores;
   bool display;
+
+  // Lat/lon coordinates of the bounding box of the domain
+  // These values will not be used when a mesh file is given
   double N;
   double S;
   double E;
   double W;
-  string dataDir;
+
+  std::string dataDir; // Directory of the DTM maps and mesh files (if used)
+
   bool ascii;
-  string asciiFile;
-  string output;
+  std::string asciiFile;
+
+  std::string inputMeshFile; // Filename of the inp mesh. It should be inside dataDir and use UTM coordinates
+  long zone;                 // UTM zone of the inputMeshFile
+  char hemisphere;           // Hemisphere of the inputMeshFile
+
+  std::string output;
 
   Config(int argc, char** argv)
-      : tolerance(5), version2D(false), steps(14), cores(-1), display(false),
+      : tolerance(5), version2D(false), steps(11), cores(-1), display(false),
         N(50.2), S(49.9), E(20.2), W(19.7), dataDir("data"), ascii(false),
-        asciiFile(""), output(string("graph") +
-        std::to_string(galois::getActiveThreads()) + ".mgf") {
+        asciiFile(""), inputMeshFile(""), zone(34), hemisphere('N'),
+        output(std::string("graph") +
+               std::to_string(galois::getActiveThreads()) + ".mgf") {
     parseArguments(argc, argv);
   }
 

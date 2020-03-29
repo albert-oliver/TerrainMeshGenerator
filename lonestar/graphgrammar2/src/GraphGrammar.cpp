@@ -1,23 +1,34 @@
-#include <galois/graphs/Graph.h>
-#include <Lonestar/BoilerPlate.h>
-#include "model/EdgeData.h"
-#include "model/NodeData.h"
+#include "conditions/TerrainConditionChecker.h"
+#include "libmgrs/utm.h"
+#include "model/Coordinates.h"
 #include "model/Graph.h"
 #include "model/Map.h"
-#include "conditions/TerrainConditionChecker.h"
-#include "conditions/DummyConditionChecker.h"
+#include "model/NodeData.h"
+#include "model/ProductionState.h"
+#include "productions/Production.h"
 #include "productions/Production1.h"
 #include "productions/Production2.h"
 #include "productions/Production3.h"
 #include "productions/Production4.h"
 #include "productions/Production5.h"
 #include "productions/Production6.h"
-#include "utils/MyGraphFormatWriter.h"
-#include "utils/utils.h"
-#include "utils/GraphGenerator.h"
+#include "readers/InpReader.h"
 #include "readers/SrtmReader.h"
-#include "readers/AsciiReader.h"
 #include "utils/Config.h"
+#include "writers/InpWriter.h"
+#include "utils/ConnectivityManager.h"
+#include "utils/GraphGenerator.h"
+#include "utils/MyGraphFormatWriter.h"
+#include "utils/Utils.h"
+
+#include <galois/graphs/Graph.h>
+#include <Lonestar/BoilerPlate.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <string>
+#include <tuple>
+#include <vector>
 
 static const char* name = "Mesh generator";
 static const char* desc = "...";
@@ -54,20 +65,63 @@ int main(int argc, char** argv) {
   //    AsciiReader reader;
   //    Map *map = reader.read("data/test2.asc");
   galois::gInfo("Initial configuration set.");
-  SrtmReader reader;
 
-  // terrain setup:  load terrain heights into the map object
-  Map* map = reader.read(config.W, config.N, config.E, config.S,
-                         config.dataDir.c_str());
-  galois::gInfo("Terrain data read.");
-  //    GraphGenerator::generateSampleGraph(graph);
-  //    GraphGenerator::generateSampleGraphWithData(graph, *map, 0,
-  //    map->getLength() - 1, map->getWidth() - 1, 0, config.version2D);
+
+  Map* map;
 
   // creates the initial mesh using the borders and the new map
-  GraphGenerator::generateSampleGraphWithDataWithConversionToUtm(
+  if (config.inputMeshFile.size() == 0) {
+
+      SrtmReader reader;
+
+      // terrain setup:  load terrain heights into the map object
+      map = reader.read(config.W, config.N, config.E, config.S,
+                             config.dataDir.c_str());
+      galois::gInfo("Terrain data read.");
+      //    GraphGenerator::generateSampleGraph(graph);
+      //    GraphGenerator::generateSampleGraphWithData(graph, *map, 0,
+      //    map->getLength() - 1, map->getWidth() - 1, 0, config.version2D);
+
+
+    GraphGenerator::generateSampleGraphWithDataWithConversionToUtm(
       graph, *map, config.W, config.N, config.E, config.S, config.version2D);
+
   galois::gInfo("Initial graph generated");
+  } else {
+
+    inpRead(config.dataDir+"/"+config.inputMeshFile, graph, config);
+    galois::gInfo("INP mesh read.");
+
+    // Let's convert the four corners to geodesic coordinates
+    double x1, x2, x3, x4, y1, y2, y3, y4;
+    Convert_UTM_To_Geodetic(config.zone, config.hemisphere, config.E, config.N, &y1, &x1);
+    Convert_UTM_To_Geodetic(config.zone, config.hemisphere, config.E, config.S, &y2, &x2);
+    Convert_UTM_To_Geodetic(config.zone, config.hemisphere, config.W, config.N, &y3, &x3);
+    Convert_UTM_To_Geodetic(config.zone, config.hemisphere, config.W, config.S, &y4, &x4);
+
+    std::tie(config.W, config.E) = std::minmax({Utils::r2d(x1), Utils::r2d(x2), Utils::r2d(x3), Utils::r2d(x4)});
+    std::tie(config.S, config.N) = std::minmax({Utils::r2d(y1), Utils::r2d(y2), Utils::r2d(y3), Utils::r2d(y4)});
+
+    // Create the map
+    SrtmReader reader;
+
+    // terrain setup:  load terrain heights into the map object
+    map = reader.read(config.W, config.N, config.E, config.S,
+                           config.dataDir.c_str());
+    galois::gInfo("Terrain data read.");
+
+
+    map->setZone(config.zone);
+    map->setHemisphere(config.hemisphere);
+
+    // Update the coordinates of all graph nodes (mesh nodes, and the interior nodes)
+    for (auto node : graph) {
+            const auto coords = node->getData().getCoords();
+
+            node->getData().setCoords(Coordinates{coords.getX(), coords.getY(), *map});
+    }
+
+  }
 
   // initialize wrapper over graph object (ConnManager)
   ConnectivityManager connManager{graph};
@@ -135,15 +189,22 @@ int main(int argc, char** argv) {
             }
           },
           galois::loopname(("step" + std::to_string(j)).c_str()));
+          // Write the inp file
+          inpWriter("output_" + std::to_string(j) + ".inp", graph);
     }
+    
     step.stop();
     galois::gInfo("Step ", j, " finished.");
   }
   galois::gInfo("All steps finished.");
 
   // final result writing
-  MyGraphFormatWriter::writeToFile(graph, config.output);
-  galois::gInfo("Graph written to file ", config.output);
+  // MyGraphFormatWriter::writeToFile(graph, config.output);
+  // galois::gInfo("Graph written to file ", config.output);
+
+
+  inpWriter("output_test.inp", graph);
+
   if (config.display) {
     system((std::string("./display.sh ") + config.output).c_str());
   }
