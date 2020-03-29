@@ -1,6 +1,9 @@
 #ifndef GALOIS_UTILS_H
 #define GALOIS_UTILS_H
 
+#include <cmath>
+#include <vector>
+
 static const double EPS = 1e-4;
 
 inline bool equals(double a, double b) { return fabs(a - b) < EPS; }
