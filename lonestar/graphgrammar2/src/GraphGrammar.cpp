@@ -189,10 +189,11 @@ int main(int argc, char** argv) {
             }
           },
           galois::loopname(("step" + std::to_string(j)).c_str()));
-          // Write the inp file
-          inpWriter("output_" + std::to_string(j) + ".inp", graph);
     }
     
+   // Write the inp file of step j
+   inpWriter("output_" + std::to_string(j) + ".inp", graph);
+
     step.stop();
     galois::gInfo("Step ", j, " finished.");
   }
